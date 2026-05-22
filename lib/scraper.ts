@@ -65,8 +65,10 @@ export function filterByDateRange(posts: Post[], startDate: string, endDate: str
 }
 
 async function fetchEucKrPage(url: string, cookieString: string): Promise<string> {
-  const safeCookie = cookieString.replace(/[\r\n\t\0]/g, ' ').trim();
-  console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}`);
+  // Keep only valid HTTP header value chars: printable ASCII + obs-text (0x20-0xFF), remove the rest
+  const safeCookie = cookieString.replace(/[^\x20-\xFF]/g, '').trim();
+  const removedCount = cookieString.length - safeCookie.length;
+  console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}, removed=${removedCount} invalid chars`);
 
   let response: Response;
   try {
