@@ -71,7 +71,7 @@ export function filterByDateRange(posts: Post[], startDate: string, endDate: str
   return posts.filter(p => p.date >= startDate && p.date <= endDate);
 }
 
-async function fetchEucKrPage(url: string, cookieString: string): Promise<string> {
+async function fetchPage(url: string, cookieString: string): Promise<string> {
   // Keep only valid HTTP header value chars: printable ASCII + obs-text (0x20-0xFF), remove the rest
   const safeCookie = cookieString.replace(/[^\x20-\xFF]/g, '').trim();
   console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}`);
@@ -89,7 +89,14 @@ async function fetchEucKrPage(url: string, cookieString: string): Promise<string
   console.log(`[fetch] ${response.status} ${response.headers.get('content-type')}`);
 
   const buffer = await response.arrayBuffer();
-  return new TextDecoder('euc-kr').decode(buffer);
+
+  // Peek at the first 2 KB as ASCII to detect the meta charset declaration.
+  // The HTTP Content-Type may say EUC-KR while the actual content is UTF-8 (pann.nate.com case).
+  const peek = new TextDecoder('ascii', { fatal: false }).decode(buffer.slice(0, 2000));
+  const metaCharset = peek.match(/charset=['"']?([^'"\s;>]+)/i)?.[1]?.toLowerCase() ?? '';
+  const charset = metaCharset === 'euc-kr' ? 'euc-kr' : 'utf-8';
+
+  return new TextDecoder(charset).decode(buffer);
 }
 
 export class AuthExpiredError extends Error {
@@ -110,7 +117,7 @@ export async function scrapeMyTalkPosts(
   const MAX_PAGES = 50;
 
   while (visited < MAX_PAGES) {
-    const html = await fetchEucKrPage(url, cookieString);
+    const html = await fetchPage(url, cookieString);
 
     if (isLoginPage(html)) {
       throw new AuthExpiredError();
