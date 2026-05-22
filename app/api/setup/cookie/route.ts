@@ -7,13 +7,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    cookieString = (body.cookieString ?? '').trim();
+    if (typeof body?.cookieString !== 'string') {
+      return NextResponse.json({ error: 'cookieString must be a string' }, { status: 400 });
+    }
+    cookieString = body.cookieString.trim();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
   if (!cookieString) {
     return NextResponse.json({ error: 'cookieString is required' }, { status: 400 });
+  }
+
+  if (cookieString.length > 8192) {
+    return NextResponse.json({ error: 'cookieString too large' }, { status: 400 });
   }
 
   const valid = await validateCookieString(cookieString);
