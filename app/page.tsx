@@ -40,6 +40,14 @@ export default function HomePage() {
       });
   }, []);
 
+  // Auto-fetch when authenticated
+  useEffect(() => {
+    if (authenticated) {
+      handleFetch();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authenticated]);
+
   const handleLogin = () => {
     window.open('https://xo.nate.com/Login.sk', '_blank', 'noopener,noreferrer');
   };
@@ -134,8 +142,8 @@ export default function HomePage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button onClick={handleFetch} disabled={loading || !dateRange?.from || !dateRange?.to} size="lg">
-        {loading ? '조회 중...' : '조회하기'}
+      <Button onClick={handleFetch} disabled={loading || !dateRange?.from || !dateRange?.to} variant="outline">
+        {loading ? '조회 중...' : '다시 조회'}
       </Button>
     </main>
   );
