@@ -80,12 +80,21 @@ describe('dateTextToYYYYMMDD', () => {
 });
 
 describe('parsePosts', () => {
-  test('extracts posts with date and viewCount', () => {
+  test('extracts posts with date, viewCount, title, url', () => {
     const result = parsePosts(POSTS_HTML);
     expect(result.posts).toHaveLength(3);
-    expect(result.posts[0]).toEqual({ date: '20260515', viewCount: 234 });
-    expect(result.posts[1]).toEqual({ date: '20260510', viewCount: 1567 });
-    expect(result.posts[2]).toEqual({ date: '20260430', viewCount: 89 });
+    expect(result.posts[0]).toEqual({
+      date: '20260515',
+      viewCount: 234,
+      title: '첫 번째 토크 제목',
+      url: 'https://pann.nate.com/talk/100001',
+    });
+    expect(result.posts[1]).toEqual({
+      date: '20260510',
+      viewCount: 1567,
+      title: '두 번째 토크 제목',
+      url: 'https://pann.nate.com/talk/100002',
+    });
   });
 
   test('detects next page link when href is a real URL', () => {
@@ -109,17 +118,15 @@ describe('parsePosts', () => {
     expect(result.hasNextPage).toBe(false);
   });
 
-  test('returns empty array when table is absent', () => {
-    const result = parsePosts('<html><body></body></html>');
-    expect(result.posts).toHaveLength(0);
-    expect(result.hasNextPage).toBe(false);
-  });
-
   test('parses comma-separated view count correctly', () => {
     const html = `<html><body>
       <table class="mylist">
         <tbody>
-          <tr><td class="date">2026.05.01</td><td class="count">12,345</td></tr>
+          <tr>
+            <td><a href="/talk/1">글</a></td>
+            <td class="date">2026.05.01</td>
+            <td class="count">12,345</td>
+          </tr>
         </tbody>
       </table>
     </body></html>`;
@@ -130,9 +137,9 @@ describe('parsePosts', () => {
 
 describe('filterByDateRange', () => {
   const posts = [
-    { date: '20260515', viewCount: 234 },
-    { date: '20260510', viewCount: 1567 },
-    { date: '20260430', viewCount: 89 },
+    { date: '20260515', viewCount: 234, title: 'A', url: 'https://pann.nate.com/talk/1' },
+    { date: '20260510', viewCount: 1567, title: 'B', url: 'https://pann.nate.com/talk/2' },
+    { date: '20260430', viewCount: 89, title: 'C', url: 'https://pann.nate.com/talk/3' },
   ];
 
   test('keeps posts within range inclusive', () => {

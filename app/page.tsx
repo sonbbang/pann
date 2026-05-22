@@ -10,9 +10,23 @@ import { Button } from '@/components/ui/button';
 const DEFAULT_START = new Date(2026, 4, 8);   // May 8, 2026
 const DEFAULT_END = new Date(2026, 5, 7);     // Jun 7, 2026
 
+interface TopPost {
+  title: string;
+  url: string;
+  viewCount: number;
+}
+
 interface StatsResult {
   count: number;
   totalViews: number;
+  over5kCount: number;
+  over50kCount: number;
+  over100kCount: number;
+  topPosts: TopPost[];
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString('ko-KR');
 }
 
 export default function HomePage() {
@@ -126,19 +140,38 @@ export default function HomePage() {
       </div>
 
       <div className="flex gap-4 flex-wrap justify-center">
-        <StatsCard
-          label="작성 글 수"
-          value={stats?.count ?? null}
-          unit="건"
-          loading={loading}
-        />
-        <StatsCard
-          label="총 조회수"
-          value={stats?.totalViews ?? null}
-          unit=""
-          loading={loading}
-        />
+        <StatsCard label="작성 글 수" value={stats?.count ?? null} unit="건" loading={loading} />
+        <StatsCard label="총 조회수" value={stats?.totalViews ?? null} unit="" loading={loading} />
       </div>
+
+      <div className="flex gap-4 flex-wrap justify-center">
+        <StatsCard label="5천+ 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
+        <StatsCard label="5만+ 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
+        <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
+      </div>
+
+      {stats && stats.topPosts.length > 0 && (
+        <div className="w-full max-w-2xl">
+          <p className="text-sm font-medium text-muted-foreground mb-2">5천+ 조회 글 목록</p>
+          <div className="rounded-lg border bg-white divide-y text-sm">
+            {stats.topPosts.map((post, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2 gap-3">
+                <a
+                  href={post.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline truncate flex-1 min-w-0"
+                >
+                  {post.title || '(제목 없음)'}
+                </a>
+                <span className="text-muted-foreground shrink-0 tabular-nums">
+                  {formatNumber(post.viewCount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 

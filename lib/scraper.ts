@@ -1,14 +1,25 @@
 import * as cheerio from 'cheerio';
 
 export interface Post {
-  date: string;   // YYYYMMDD
+  date: string;      // YYYYMMDD
   viewCount: number;
+  title: string;
+  url: string;
 }
 
 export interface ParseResult {
   posts: Post[];
   hasNextPage: boolean;
   nextPageUrl?: string;
+}
+
+export interface ScrapeResult {
+  count: number;
+  totalViews: number;
+  over5kCount: number;
+  over50kCount: number;
+  over100kCount: number;
+  topPosts: Post[];  // viewCount >= 5000, sorted desc
 }
 
 export function isLoginPage(html: string): boolean {
@@ -27,6 +38,11 @@ export function parsePosts(html: string): ParseResult {
   const posts: Post[] = [];
 
   $('table.mylist tbody tr').each((_, el) => {
+    const linkEl = $(el).find('td').first().find('a');
+    const title = linkEl.text().trim();
+    const href = linkEl.attr('href') ?? '';
+    const url = href ? `https://pann.nate.com${href}` : '';
+
     const dateText = $(el).find('td.date').text().trim();
     const viewText = $(el).find('td.count').text().trim();
 
@@ -34,7 +50,7 @@ export function parsePosts(html: string): ParseResult {
     const viewCount = parseInt(viewText.replace(/,/g, ''), 10) || 0;
 
     if (date) {
-      posts.push({ date, viewCount });
+      posts.push({ date, viewCount, title, url });
     }
   });
 
@@ -58,42 +74,22 @@ export function filterByDateRange(posts: Post[], startDate: string, endDate: str
 async function fetchEucKrPage(url: string, cookieString: string): Promise<string> {
   // Keep only valid HTTP header value chars: printable ASCII + obs-text (0x20-0xFF), remove the rest
   const safeCookie = cookieString.replace(/[^\x20-\xFF]/g, '').trim();
-  const removedCount = cookieString.length - safeCookie.length;
-  console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}, removed=${removedCount} invalid chars`);
+  console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}`);
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      headers: {
-        Cookie: safeCookie,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-        Referer: 'https://pann.nate.com/',
-      },
-      redirect: 'follow',
-    });
-    console.log(`[fetch] ok ${response.status} ${response.headers.get('content-type')}`);
-  } catch (e) {
-    console.error('[fetch] fetch() threw:', String(e), (e as Error)?.cause ? String((e as Error).cause) : '');
-    throw e;
-  }
+  const response = await fetch(url, {
+    headers: {
+      Cookie: safeCookie,
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml',
+      'Accept-Language': 'ko-KR,ko;q=0.9',
+      Referer: 'https://pann.nate.com/',
+    },
+    redirect: 'follow',
+  });
+  console.log(`[fetch] ${response.status} ${response.headers.get('content-type')}`);
 
-  let buffer: ArrayBuffer;
-  try {
-    buffer = await response.arrayBuffer();
-    console.log(`[fetch] buffer size=${buffer.byteLength}`);
-  } catch (e) {
-    console.error('[fetch] arrayBuffer() threw:', String(e));
-    throw e;
-  }
-
-  try {
-    return new TextDecoder('euc-kr').decode(buffer);
-  } catch (e) {
-    console.error('[fetch] TextDecoder threw:', String(e));
-    throw e;
-  }
+  const buffer = await response.arrayBuffer();
+  return new TextDecoder('euc-kr').decode(buffer);
 }
 
 export class AuthExpiredError extends Error {
@@ -107,7 +103,7 @@ export async function scrapeMyTalkPosts(
   cookieString: string,
   startDate: string,
   endDate: string
-): Promise<{ count: number; totalViews: number }> {
+): Promise<ScrapeResult> {
   let url = 'https://pann.nate.com/my?mode=T';
   let allPosts: Post[] = [];
   let visited = 0;
@@ -135,9 +131,17 @@ export async function scrapeMyTalkPosts(
     url = nextPageUrl;
   }
 
+  const topPosts = allPosts
+    .filter(p => p.viewCount >= 5000)
+    .sort((a, b) => b.viewCount - a.viewCount);
+
   return {
     count: allPosts.length,
     totalViews: allPosts.reduce((sum, p) => sum + p.viewCount, 0),
+    over5kCount: topPosts.length,
+    over50kCount: topPosts.filter(p => p.viewCount >= 50000).length,
+    over100kCount: topPosts.filter(p => p.viewCount >= 100000).length,
+    topPosts,
   };
 }
 
