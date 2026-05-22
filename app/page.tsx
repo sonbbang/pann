@@ -146,8 +146,8 @@ export default function HomePage() {
       </div>
 
       <div className="flex gap-4 flex-wrap justify-center">
-        <StatsCard label="5천+ 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
-        <StatsCard label="5만+ 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
+        <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
+        <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
         <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
       </div>
 

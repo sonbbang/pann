@@ -145,8 +145,8 @@ export async function scrapeMyTalkPosts(
   return {
     count: allPosts.length,
     totalViews: allPosts.reduce((sum, p) => sum + p.viewCount, 0),
-    over5kCount: topPosts.length,
-    over50kCount: topPosts.filter(p => p.viewCount >= 50000).length,
+    over5kCount:   topPosts.filter(p => p.viewCount >= 5000  && p.viewCount < 50000).length,
+    over50kCount:  topPosts.filter(p => p.viewCount >= 50000 && p.viewCount < 100000).length,
     over100kCount: topPosts.filter(p => p.viewCount >= 100000).length,
     topPosts,
   };
