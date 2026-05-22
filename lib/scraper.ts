@@ -38,7 +38,7 @@ export function parsePosts(html: string): ParseResult {
   const posts: Post[] = [];
 
   $('table.mylist tbody tr').each((_, el) => {
-    const linkEl = $(el).find('td').first().find('a');
+    const linkEl = $(el).find('td.subject a').first();
     const title = linkEl.text().trim();
     const href = linkEl.attr('href') ?? '';
     const url = href ? `https://pann.nate.com${href}` : '';

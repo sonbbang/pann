@@ -10,19 +10,22 @@ const POSTS_HTML = `
     <thead><tr><th>제목</th><th>날짜</th><th>조회</th></tr></thead>
     <tbody>
       <tr class="first">
-        <td><a href="/talk/100001">첫 번째 토크 제목</a></td>
-        <td class="date">2026.05.15</td>
+        <td class="chk"><input type="checkbox" name="tmpChk" value="1"></td>
+        <td class="subject"><a href="/talk/100001">첫 번째 토크 제목</a></td>
         <td class="count">234</td>
+        <td class="date">2026.05.15</td>
       </tr>
       <tr>
-        <td><a href="/talk/100002">두 번째 토크 제목</a></td>
-        <td class="date">2026.05.10</td>
+        <td class="chk"><input type="checkbox" name="tmpChk" value="2"></td>
+        <td class="subject"><a href="/talk/100002">두 번째 토크 제목</a><span class="reple-num">(3)</span></td>
         <td class="count">1,567</td>
+        <td class="date">2026.05.10</td>
       </tr>
       <tr>
-        <td><a href="/talk/100003">오래된 토크</a></td>
-        <td class="date">2026.04.30</td>
+        <td class="chk"><input type="checkbox" name="tmpChk" value="3"></td>
+        <td class="subject"><a href="/talk/100003">오래된 토크</a></td>
         <td class="count">89</td>
+        <td class="date">2026.04.30</td>
       </tr>
     </tbody>
   </table>
@@ -39,9 +42,10 @@ const NO_NEXT_HTML = `
     <thead><tr><th>제목</th><th>날짜</th><th>조회</th></tr></thead>
     <tbody>
       <tr class="first">
-        <td><a href="/talk/100004">마지막 토크</a></td>
-        <td class="date">2026.05.08</td>
+        <td class="chk"><input type="checkbox" name="tmpChk" value="4"></td>
+        <td class="subject"><a href="/talk/100004">마지막 토크</a></td>
         <td class="count">42</td>
+        <td class="date">2026.05.08</td>
       </tr>
     </tbody>
   </table>
@@ -123,9 +127,10 @@ describe('parsePosts', () => {
       <table class="mylist">
         <tbody>
           <tr>
-            <td><a href="/talk/1">글</a></td>
-            <td class="date">2026.05.01</td>
+            <td class="chk"></td>
+            <td class="subject"><a href="/talk/1">글</a></td>
             <td class="count">12,345</td>
+            <td class="date">2026.05.01</td>
           </tr>
         </tbody>
       </table>
