@@ -10,7 +10,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (typeof body?.cookieString !== 'string') {
       return NextResponse.json({ error: 'cookieString must be a string' }, { status: 400 });
     }
-    cookieString = body.cookieString.trim();
+    cookieString = body.cookieString.replace(/[\r\n\t\0]/g, ' ').trim();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
