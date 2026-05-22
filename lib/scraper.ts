@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import iconv from 'iconv-lite';
 
 export interface Post {
   date: string;   // YYYYMMDD
@@ -79,8 +78,7 @@ async function fetchEucKrPage(url: string, cookieString: string): Promise<string
   console.log(`[fetch] ${url} → ${response.status} ${response.headers.get('content-type')}`);
 
   const buffer = await response.arrayBuffer();
-  const uint8 = new Uint8Array(buffer);
-  return iconv.decode(Buffer.from(uint8), 'euc-kr');
+  return new TextDecoder('euc-kr').decode(buffer);
 }
 
 export class AuthExpiredError extends Error {
