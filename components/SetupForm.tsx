@@ -16,18 +16,23 @@ export function SetupForm() {
     setLoading(true);
     setError('');
 
-    const res = await fetch('/api/setup/cookie', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cookieString: cookieString.trim() }),
-    });
+    try {
+      const res = await fetch('/api/setup/cookie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookieString: cookieString.trim() }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      router.push('/');
-    } else {
+      if (res.ok) {
+        router.push('/');
+        return;
+      }
       setError(data.error ?? '오류가 발생했습니다.');
+    } catch {
+      setError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
+    } finally {
       setLoading(false);
     }
   }
@@ -49,7 +54,11 @@ export function SetupForm() {
         </ol>
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          <label htmlFor="cookie-input" className="text-sm font-medium">
+            쿠키 문자열
+          </label>
           <textarea
+            id="cookie-input"
             className="w-full h-28 p-2 text-xs font-mono border rounded resize-none focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="HID=...; JSESSIONID=...; ..."
             value={cookieString}
@@ -60,7 +69,7 @@ export function SetupForm() {
             <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" className="w-full" disabled={loading || !cookieString.trim()}>
-            {loading ? '확인 중...' : '연결하기'}
+            {loading ? '쿠키 확인 중...' : '연결하기'}
           </Button>
         </form>
       </CardContent>

@@ -9,13 +9,13 @@ interface StatsCardProps {
 
 export function StatsCard({ label, value, unit, loading = false }: StatsCardProps) {
   return (
-    <Card className="flex-1 min-w-[160px]">
+    <Card className="flex-1 min-w-40" aria-label={label} aria-busy={loading}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-8 bg-muted animate-pulse rounded" />
+          <div className="h-8 bg-muted animate-pulse rounded" role="status" aria-label="로딩 중" />
         ) : (
           <p className="text-3xl font-bold">
             {value === null ? '--' : value.toLocaleString('ko-KR')}
