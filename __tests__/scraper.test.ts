@@ -86,6 +86,18 @@ describe('parsePosts', () => {
     expect(result.nextPageUrl).toBeUndefined();
   });
 
+  test('detects next page via fallback "다음" selector (no .next class)', () => {
+    const html = `<html><body>
+      <div class="paging">
+        <span class="on">1</span>
+        <a href="/my?page=2">다음</a>
+      </div>
+    </body></html>`;
+    const result = parsePosts(html);
+    expect(result.hasNextPage).toBe(true);
+    expect(result.nextPageUrl).toContain('page=2');
+  });
+
   test('returns empty array when no list items', () => {
     const result = parsePosts('<html><body><ul class="list_wrap"></ul></body></html>');
     expect(result.posts).toHaveLength(0);

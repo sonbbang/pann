@@ -41,12 +41,12 @@ export function parsePosts(html: string): ParseResult {
   });
 
   // ⚠️ VERIFY: Next page link selector — common Korean board patterns
-  const nextHref =
-    $('a.next').attr('href') ||
-    $('.paging a:last-child').attr('href') ||
-    $('a:contains("다음")').attr('href');
+  let $nextEl = $('a.next');
+  if (!$nextEl.attr('href')) $nextEl = $('.paging a:last-child');
+  if (!$nextEl.attr('href')) $nextEl = $('a:contains("다음")');
 
-  const hasNextPage = !!nextHref && !$('a.next').parent().hasClass('disabled');
+  const nextHref = $nextEl.attr('href') || null;
+  const hasNextPage = !!nextHref && !$nextEl.parent().hasClass('disabled');
 
   return {
     posts,
