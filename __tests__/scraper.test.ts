@@ -86,7 +86,7 @@ describe('parsePosts', () => {
     expect(result.nextPageUrl).toBeUndefined();
   });
 
-  test('detects next page via fallback "다음" selector (no .next class)', () => {
+  test('detects next page via .paging a:last-child fallback (no .next class)', () => {
     const html = `<html><body>
       <div class="paging">
         <span class="on">1</span>
@@ -96,6 +96,29 @@ describe('parsePosts', () => {
     const result = parsePosts(html);
     expect(result.hasNextPage).toBe(true);
     expect(result.nextPageUrl).toContain('page=2');
+  });
+
+  test('detects next page via a:contains("다음") fallback (a is not last-child)', () => {
+    // The <a> is NOT the last child — .paging a:last-child won't match it
+    const html = `<html><body>
+      <div class="paging">
+        <a href="/my?page=2">다음</a>
+        <span class="on">2</span>
+      </div>
+    </body></html>`;
+    const result = parsePosts(html);
+    expect(result.hasNextPage).toBe(true);
+    expect(result.nextPageUrl).toContain('page=2');
+  });
+
+  test('hasNextPage is false when next link is disabled on anchor itself', () => {
+    const html = `<html><body>
+      <div class="paging">
+        <a class="next disabled" href="/my?page=2">다음</a>
+      </div>
+    </body></html>`;
+    const result = parsePosts(html);
+    expect(result.hasNextPage).toBe(false);
   });
 
   test('returns empty array when no list items', () => {

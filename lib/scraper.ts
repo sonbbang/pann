@@ -46,7 +46,9 @@ export function parsePosts(html: string): ParseResult {
   if (!$nextEl.attr('href')) $nextEl = $('a:contains("다음")');
 
   const nextHref = $nextEl.attr('href') || null;
-  const hasNextPage = !!nextHref && !$nextEl.parent().hasClass('disabled');
+  const hasNextPage = !!nextHref &&
+    !$nextEl.hasClass('disabled') &&
+    !$nextEl.parent().hasClass('disabled');
 
   return {
     posts,
