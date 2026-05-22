@@ -11,6 +11,7 @@ const DEFAULT_START = new Date(2026, 4, 8);   // May 8, 2026
 const DEFAULT_END = new Date(2026, 5, 7);     // Jun 7, 2026
 
 interface TopPost {
+  date: string;
   title: string;
   url: string;
   viewCount: number;
@@ -164,6 +165,9 @@ export default function HomePage() {
                 >
                   {post.title || '(제목 없음)'}
                 </a>
+                <span className="text-muted-foreground shrink-0 text-xs">
+                  {post.date.slice(0, 4)}.{post.date.slice(4, 6)}.{post.date.slice(6, 8)}
+                </span>
                 <span className="text-muted-foreground shrink-0 tabular-nums">
                   {formatNumber(post.viewCount)}
                 </span>
