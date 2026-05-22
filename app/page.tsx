@@ -41,7 +41,8 @@ export default function HomePage() {
   }, []);
 
   const handleLogin = () => {
-    window.open('https://xo.nate.com/Login.sk', '_blank', 'noopener,noreferrer');
+    const redirect = `${window.location.origin}/setup`;
+    window.location.href = `https://xo.nate.com/Login.sk?redirect=${encodeURIComponent(redirect)}`;
   };
 
   const handleFetch = useCallback(async () => {
@@ -91,19 +92,10 @@ export default function HomePage() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-50 p-4">
         <h1 className="text-2xl font-bold">내 판 토크 통계</h1>
-        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside text-left">
-          <li>아래 버튼으로 네이트 로그인 (새 탭)</li>
-          <li>로그인 후 이 탭으로 돌아오기</li>
-          <li>쿠키 입력하기 버튼 클릭 → 쿠키 붙여넣기</li>
-        </ol>
-        <div className="flex flex-col gap-3 items-center">
-          <Button onClick={handleLogin} size="lg">
-            1. 네이트 로그인 (새 탭)
-          </Button>
-          <Button variant="outline" size="lg" onClick={() => window.location.href = '/setup'}>
-            2. 쿠키 입력하기
-          </Button>
-        </div>
+        <p className="text-muted-foreground text-sm">로그인 후 쿠키 입력 페이지로 이동합니다.</p>
+        <Button onClick={handleLogin} size="lg">
+          네이트 로그인
+        </Button>
       </main>
     );
   }
