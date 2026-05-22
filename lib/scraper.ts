@@ -73,10 +73,14 @@ async function fetchEucKrPage(url: string, cookieString: string): Promise<string
       Accept: 'text/html,application/xhtml+xml',
       'Accept-Language': 'ko-KR,ko;q=0.9',
     },
+    redirect: 'follow',
   });
 
+  console.log(`[fetch] ${url} → ${response.status} ${response.headers.get('content-type')}`);
+
   const buffer = await response.arrayBuffer();
-  return iconv.decode(Buffer.from(buffer), 'euc-kr');
+  const uint8 = new Uint8Array(buffer);
+  return iconv.decode(Buffer.from(uint8), 'euc-kr');
 }
 
 export class AuthExpiredError extends Error {

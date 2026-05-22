@@ -34,7 +34,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (err instanceof AuthExpiredError) {
       return NextResponse.json({ error: 'Session expired', code: 'AUTH_EXPIRED' }, { status: 401 });
     }
-    console.error('Scrape error:', err);
-    return NextResponse.json({ error: 'Failed to fetch posts' }, { status: 500 });
+    const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    console.error('Scrape error:', msg);
+    return NextResponse.json({ error: 'Failed to fetch posts', detail: msg }, { status: 500 });
   }
 }
