@@ -39,18 +39,44 @@ export function SetupForm() {
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>세션 연결</CardTitle>
+        <CardTitle>쿠키 입력</CardTitle>
         <CardDescription>
-          아래 안내에 따라 pann.nate.com 쿠키를 복사해 붙여넣기 해주세요.
+          아래 순서대로 pann.nate.com 쿠키를 복사해 붙여넣기 해주세요.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ol className="mb-4 space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-          <li>새 탭에서 <a href="https://pann.nate.com/my" target="_blank" rel="noreferrer" className="text-blue-500 underline">pann.nate.com/my</a> 접속 (로그인 상태 확인)</li>
-          <li>F12 → <strong>Application</strong> → <strong>Cookies</strong> → <strong>https://pann.nate.com</strong> 선택</li>
-          <li>모든 쿠키 행을 선택(Ctrl+A) → 브라우저 개발자 도구에서 우클릭 → "Copy All" 또는 아래 방법으로 수집:</li>
-          <li>콘솔(Console) 탭에서 <code className="bg-muted px-1 rounded">document.cookie</code> 입력 후 출력값 전체 복사</li>
+        <ol className="mb-5 space-y-3 text-sm text-muted-foreground list-decimal list-inside">
+          <li>
+            새 탭에서{' '}
+            <a
+              href="https://pann.nate.com/my?mode=T"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-500 underline"
+            >
+              pann.nate.com/my?mode=T
+            </a>{' '}
+            접속 — 내 글 목록이 보여야 합니다 (로그인 상태 확인)
+          </li>
+          <li>
+            <strong>F12</strong> → <strong>Network</strong> 탭 클릭
+          </li>
+          <li>
+            <strong>F5</strong> 로 페이지 새로고침
+          </li>
+          <li>
+            Network 목록 맨 위 요청(<code className="bg-muted px-1 rounded">my?mode=T</code>) 클릭
+          </li>
+          <li>
+            오른쪽 패널 → <strong>Headers</strong> → <strong>Request Headers</strong> 섹션에서{' '}
+            <strong>Cookie</strong> 값 전체 복사
+          </li>
         </ol>
+
+        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          ⚠️ <strong>주의:</strong> Console 탭의 <code>document.cookie</code>로 복사하면 일부 쿠키가 누락됩니다.
+          반드시 <strong>Network 탭 → Request Headers → Cookie</strong> 에서 복사하세요.
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <label htmlFor="cookie-input" className="text-sm font-medium">
@@ -59,7 +85,7 @@ export function SetupForm() {
           <textarea
             id="cookie-input"
             className="w-full h-28 p-2 text-xs font-mono border rounded resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="HID=...; JSESSIONID=...; ..."
+            placeholder="HID=...; PHPSESSID=...; NATE_HASH=...; ..."
             value={cookieString}
             onChange={(e) => setCookieString(e.target.value)}
             required
@@ -68,7 +94,7 @@ export function SetupForm() {
             <p className="text-sm text-destructive">{error}</p>
           )}
           <Button type="submit" className="w-full" disabled={loading || !cookieString.trim()}>
-            {loading ? '쿠키 확인 중...' : '연결하기'}
+            {loading ? '저장 중...' : '연결하기'}
           </Button>
         </form>
       </CardContent>
