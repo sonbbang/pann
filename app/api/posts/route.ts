@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNateSession } from '@/lib/session';
 import { scrapeMyTalkPosts, AuthExpiredError } from '@/lib/scraper';
 
+export const preferredRegion = 'icn1'; // Seoul, Korea
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);
   const startDate = searchParams.get('start');
