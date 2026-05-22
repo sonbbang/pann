@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getNateSession } from '@/lib/session';
+import * as cheerio from 'cheerio';
 
 export const preferredRegion = 'icn1';
 
@@ -26,16 +27,21 @@ export async function GET(): Promise<NextResponse> {
 
     const buffer = await response.arrayBuffer();
     const html = new TextDecoder('euc-kr').decode(buffer);
+    const $ = cheerio.load(html);
+
+    // Grab the raw HTML of the first 2 rows to see real structure
+    const firstRows: string[] = [];
+    $('table.mylist tbody tr').each((i, el) => {
+      if (i < 2) firstRows.push($(el).html() ?? '');
+    });
 
     return NextResponse.json({
       vercelRegion: process.env.VERCEL_REGION ?? 'unknown',
-      status: response.status,
-      contentType: response.headers.get('content-type'),
-      cookieLength: safeCookie.length,
-      cookieKeys: safeCookie.split(';').map(s => s.split('=')[0].trim()),
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
-      htmlSnippet: html.slice(0, 500),
+      cookieLength: safeCookie.length,
       tableFound: html.includes('mylist'),
+      rowCount: $('table.mylist tbody tr').length,
+      firstRows,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
