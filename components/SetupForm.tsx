@@ -23,12 +23,11 @@ export function SetupForm() {
         body: JSON.stringify({ cookieString: cookieString.trim() }),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
         router.push('/');
         return;
       }
+      const data = await res.json().catch(() => ({})) as { error?: string };
       setError(data.error ?? '오류가 발생했습니다.');
     } catch {
       setError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
