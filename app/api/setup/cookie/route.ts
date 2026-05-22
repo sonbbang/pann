@@ -23,11 +23,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'cookieString too large' }, { status: 400 });
   }
 
-  const valid = await validateCookieString(cookieString);
+  const valid = validateCookieString(cookieString);
 
   if (!valid) {
     return NextResponse.json(
-      { error: '쿠키가 유효하지 않습니다. pann.nate.com에 로그인된 상태에서 쿠키를 복사해주세요.' },
+      { error: '쿠키 형식이 올바르지 않습니다. key=value 형태의 쿠키 문자열을 입력해주세요.' },
       { status: 401 }
     );
   }

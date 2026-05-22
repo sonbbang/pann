@@ -125,11 +125,7 @@ export async function scrapeMyTalkPosts(
   };
 }
 
-export async function validateCookieString(cookieString: string): Promise<boolean> {
-  try {
-    const html = await fetchEucKrPage('https://pann.nate.com/my', cookieString);
-    return !isLoginPage(html);
-  } catch {
-    return false;
-  }
+export function validateCookieString(cookieString: string): boolean {
+  // Basic format check: must contain at least one key=value pair
+  return cookieString.includes('=');
 }
