@@ -28,11 +28,13 @@ export async function GET(): Promise<NextResponse> {
     const html = new TextDecoder('euc-kr').decode(buffer);
 
     return NextResponse.json({
+      vercelRegion: process.env.VERCEL_REGION ?? 'unknown',
       status: response.status,
       contentType: response.headers.get('content-type'),
       cookieLength: safeCookie.length,
+      cookieKeys: safeCookie.split(';').map(s => s.split('=')[0].trim()),
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
-      htmlSnippet: html.slice(0, 1000),
+      htmlSnippet: html.slice(0, 500),
       tableFound: html.includes('mylist'),
     });
   } catch (e) {
