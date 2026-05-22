@@ -26,10 +26,9 @@ export function parsePosts(html: string): ParseResult {
   const $ = cheerio.load(html);
   const posts: Post[] = [];
 
-  // ⚠️ VERIFY: These selectors are educated guesses — update after first authenticated test
-  $('.list_item').each((_, el) => {
-    const dateText = $(el).find('.date').text().trim();
-    const viewText = $(el).find('.view_cnt em, .view em, em').first().text().trim();
+  $('table.mylist tbody tr').each((_, el) => {
+    const dateText = $(el).find('td.date').text().trim();
+    const viewText = $(el).find('td.count').text().trim();
 
     const date = dateTextToYYYYMMDD(dateText);
     const viewCount = parseInt(viewText.replace(/,/g, ''), 10) || 0;
@@ -39,23 +38,15 @@ export function parsePosts(html: string): ParseResult {
     }
   });
 
-  // ⚠️ VERIFY: Next page link selector — common Korean board patterns
-  let $nextEl = $('a.next');
-  if (!$nextEl.attr('href')) $nextEl = $('.paging a:last-child');
-  if (!$nextEl.attr('href')) $nextEl = $('a:contains("다음")');
-
-  const nextHref = $nextEl.attr('href') || null;
-  const hasNextPage = !!nextHref &&
-    !$nextEl.hasClass('disabled') &&
-    !$nextEl.parent().hasClass('disabled');
+  const nextHref = $('a.btn.next').attr('href') || null;
+  // href starts with "javascript:" on last page
+  const hasNextPage = !!nextHref && !nextHref.startsWith('javascript');
 
   return {
     posts,
     hasNextPage,
     nextPageUrl: hasNextPage && nextHref
-      ? nextHref.startsWith('http')
-        ? nextHref
-        : `https://pann.nate.com${nextHref}`
+      ? `https://pann.nate.com${nextHref}`
       : undefined,
   };
 }
@@ -78,6 +69,7 @@ async function fetchEucKrPage(url: string, cookieString: string): Promise<string
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
         'Accept-Language': 'ko-KR,ko;q=0.9',
+        Referer: 'https://pann.nate.com/',
       },
       redirect: 'follow',
     });
@@ -116,8 +108,7 @@ export async function scrapeMyTalkPosts(
   startDate: string,
   endDate: string
 ): Promise<{ count: number; totalViews: number }> {
-  // ⚠️ VERIFY: Starting URL — may need ?menu=talk or similar after checking logged-in page
-  let url = 'https://pann.nate.com/my';
+  let url = 'https://pann.nate.com/my?mode=T';
   let allPosts: Post[] = [];
   let visited = 0;
   const MAX_PAGES = 50;

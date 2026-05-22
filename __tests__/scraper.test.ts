@@ -3,47 +3,61 @@ import { isLoginPage, parsePosts, filterByDateRange, dateTextToYYYYMMDD } from '
 
 const LOGIN_HTML = `<html><body><form name="f_login"><input name="redirect" value="https://pann.nate.com/my"/></form></body></html>`;
 
+// Mirrors actual pann.nate.com/my?mode=T HTML structure (confirmed via browser DevTools)
 const POSTS_HTML = `
 <html><body>
-  <ul class="list_wrap">
-    <li class="list_item">
-      <a href="/talk/100001">첫 번째 토크 제목</a>
-      <span class="date">2026.05.15</span>
-      <span class="view_cnt">조회 <em>234</em></span>
-    </li>
-    <li class="list_item">
-      <a href="/talk/100002">두 번째 토크 제목</a>
-      <span class="date">2026.05.10</span>
-      <span class="view_cnt">조회 <em>1,567</em></span>
-    </li>
-    <li class="list_item">
-      <a href="/talk/100003">오래된 토크</a>
-      <span class="date">2026.04.30</span>
-      <span class="view_cnt">조회 <em>89</em></span>
-    </li>
-  </ul>
-  <div class="paging">
-    <span class="on">1</span>
-    <a href="/my?page=2">2</a>
-    <a class="next" href="/my?page=2">다음</a>
+  <table class="mylist">
+    <thead><tr><th>제목</th><th>날짜</th><th>조회</th></tr></thead>
+    <tbody>
+      <tr class="first">
+        <td><a href="/talk/100001">첫 번째 토크 제목</a></td>
+        <td class="date">2026.05.15</td>
+        <td class="count">234</td>
+      </tr>
+      <tr>
+        <td><a href="/talk/100002">두 번째 토크 제목</a></td>
+        <td class="date">2026.05.10</td>
+        <td class="count">1,567</td>
+      </tr>
+      <tr>
+        <td><a href="/talk/100003">오래된 토크</a></td>
+        <td class="date">2026.04.30</td>
+        <td class="count">89</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="paginate list-page">
+    <a class="btn pre" href="javascript:alert('첫 번째 페이지입니다.')">이전</a>
+    <a class="btn next" href="/my?mode=T&page=2">다음</a>
   </div>
 </body></html>`;
 
+// Last page: next button href is javascript: (no real next page)
 const NO_NEXT_HTML = `
 <html><body>
-  <ul class="list_wrap">
-    <li class="list_item">
-      <a href="/talk/100004">마지막 토크</a>
-      <span class="date">2026.05.08</span>
-      <span class="view_cnt">조회 <em>42</em></span>
-    </li>
-  </ul>
-  <div class="paging"><span class="on">2</span></div>
+  <table class="mylist">
+    <thead><tr><th>제목</th><th>날짜</th><th>조회</th></tr></thead>
+    <tbody>
+      <tr class="first">
+        <td><a href="/talk/100004">마지막 토크</a></td>
+        <td class="date">2026.05.08</td>
+        <td class="count">42</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="paginate list-page">
+    <a class="btn pre" href="/my?mode=T&page=1">이전</a>
+    <a class="btn next" href="javascript:alert('마지막 페이지입니다.')">다음</a>
+  </div>
 </body></html>`;
 
 describe('isLoginPage', () => {
   test('detects login page by f_login form', () => {
     expect(isLoginPage(LOGIN_HTML)).toBe(true);
+  });
+
+  test('detects login page by LoginAuth.sk', () => {
+    expect(isLoginPage('<html><body><script src="LoginAuth.sk"></script></body></html>')).toBe(true);
   });
 
   test('returns false for normal post list', () => {
@@ -74,56 +88,43 @@ describe('parsePosts', () => {
     expect(result.posts[2]).toEqual({ date: '20260430', viewCount: 89 });
   });
 
-  test('detects next page link', () => {
+  test('detects next page link when href is a real URL', () => {
     const result = parsePosts(POSTS_HTML);
     expect(result.hasNextPage).toBe(true);
-    expect(result.nextPageUrl).toContain('page=2');
+    expect(result.nextPageUrl).toBe('https://pann.nate.com/my?mode=T&page=2');
   });
 
-  test('no next page when only current page indicator', () => {
+  test('no next page when a.btn.next href is javascript:', () => {
     const result = parsePosts(NO_NEXT_HTML);
     expect(result.hasNextPage).toBe(false);
     expect(result.nextPageUrl).toBeUndefined();
   });
 
-  test('detects next page via .paging a:last-child fallback (no .next class)', () => {
+  test('returns empty array when table has no rows', () => {
     const html = `<html><body>
-      <div class="paging">
-        <span class="on">1</span>
-        <a href="/my?page=2">다음</a>
-      </div>
+      <table class="mylist"><thead></thead><tbody></tbody></table>
     </body></html>`;
     const result = parsePosts(html);
-    expect(result.hasNextPage).toBe(true);
-    expect(result.nextPageUrl).toContain('page=2');
-  });
-
-  test('detects next page via a:contains("다음") fallback (a is not last-child)', () => {
-    // The <a> is NOT the last child — .paging a:last-child won't match it
-    const html = `<html><body>
-      <div class="paging">
-        <a href="/my?page=2">다음</a>
-        <span class="on">2</span>
-      </div>
-    </body></html>`;
-    const result = parsePosts(html);
-    expect(result.hasNextPage).toBe(true);
-    expect(result.nextPageUrl).toContain('page=2');
-  });
-
-  test('hasNextPage is false when next link is disabled on anchor itself', () => {
-    const html = `<html><body>
-      <div class="paging">
-        <a class="next disabled" href="/my?page=2">다음</a>
-      </div>
-    </body></html>`;
-    const result = parsePosts(html);
+    expect(result.posts).toHaveLength(0);
     expect(result.hasNextPage).toBe(false);
   });
 
-  test('returns empty array when no list items', () => {
-    const result = parsePosts('<html><body><ul class="list_wrap"></ul></body></html>');
+  test('returns empty array when table is absent', () => {
+    const result = parsePosts('<html><body></body></html>');
     expect(result.posts).toHaveLength(0);
+    expect(result.hasNextPage).toBe(false);
+  });
+
+  test('parses comma-separated view count correctly', () => {
+    const html = `<html><body>
+      <table class="mylist">
+        <tbody>
+          <tr><td class="date">2026.05.01</td><td class="count">12,345</td></tr>
+        </tbody>
+      </table>
+    </body></html>`;
+    const result = parsePosts(html);
+    expect(result.posts[0].viewCount).toBe(12345);
   });
 });
 
