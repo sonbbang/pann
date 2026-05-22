@@ -142,9 +142,14 @@ export default function HomePage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button onClick={handleFetch} disabled={loading || !dateRange?.from || !dateRange?.to} variant="outline">
-        {loading ? '조회 중...' : '다시 조회'}
-      </Button>
+      <div className="flex gap-3">
+        <Button onClick={handleFetch} disabled={loading || !dateRange?.from || !dateRange?.to} variant="outline">
+          {loading ? '조회 중...' : '다시 조회'}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => { window.location.href = '/setup'; }}>
+          쿠키 재입력
+        </Button>
+      </div>
     </main>
   );
 }
