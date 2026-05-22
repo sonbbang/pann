@@ -65,22 +65,41 @@ export function filterByDateRange(posts: Post[], startDate: string, endDate: str
 }
 
 async function fetchEucKrPage(url: string, cookieString: string): Promise<string> {
-  // Strip chars invalid in HTTP header values (newlines, tabs, null bytes)
   const safeCookie = cookieString.replace(/[\r\n\t\0]/g, ' ').trim();
-  const response = await fetch(url, {
-    headers: {
-      Cookie: safeCookie,
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'text/html,application/xhtml+xml',
-      'Accept-Language': 'ko-KR,ko;q=0.9',
-    },
-    redirect: 'follow',
-  });
+  console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}`);
 
-  console.log(`[fetch] ${url} → ${response.status} ${response.headers.get('content-type')}`);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        Cookie: safeCookie,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+      },
+      redirect: 'follow',
+    });
+    console.log(`[fetch] ok ${response.status} ${response.headers.get('content-type')}`);
+  } catch (e) {
+    console.error('[fetch] fetch() threw:', String(e), (e as Error)?.cause ? String((e as Error).cause) : '');
+    throw e;
+  }
 
-  const buffer = await response.arrayBuffer();
-  return new TextDecoder('euc-kr').decode(buffer);
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await response.arrayBuffer();
+    console.log(`[fetch] buffer size=${buffer.byteLength}`);
+  } catch (e) {
+    console.error('[fetch] arrayBuffer() threw:', String(e));
+    throw e;
+  }
+
+  try {
+    return new TextDecoder('euc-kr').decode(buffer);
+  } catch (e) {
+    console.error('[fetch] TextDecoder threw:', String(e));
+    throw e;
+  }
 }
 
 export class AuthExpiredError extends Error {
