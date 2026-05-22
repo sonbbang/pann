@@ -27,12 +27,14 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <CalendarIcon className="h-4 w-4" />
-          {label}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" className="gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            {label}
+          </Button>
+        }
+      />
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="range"
