@@ -3,7 +3,7 @@ import { setNateSession } from '@/lib/session';
 import { validateCookieString } from '@/lib/scraper';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let cookieString: string;
+  let cookieString = '';
 
   try {
     const body = await request.json();
