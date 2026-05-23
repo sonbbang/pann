@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getNateSession } from '@/lib/session';
 import * as cheerio from 'cheerio';
+import { Agent, fetch as undiciFetch } from 'undici';
+
+const tlsAgent = new Agent({
+  connect: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
+});
 
 export const preferredRegion = 'icn1';
 
@@ -11,10 +16,11 @@ export async function GET(): Promise<NextResponse> {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
-  const safeCookie = nateSession.replace(/[^\x20-\xFF]/g, '').trim();
+  const safeCookie = nateSession.replace(/[^\x09\x20-\x7E\x80-\xFF]/g, '').trim();
 
   try {
-    const response = await fetch('https://pann.nate.com/my?mode=T', {
+    const response = await undiciFetch('https://pann.nate.com/my?mode=T', {
+      dispatcher: tlsAgent,
       headers: {
         Cookie: safeCookie,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

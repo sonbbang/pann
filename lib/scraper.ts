@@ -1,4 +1,11 @@
 import * as cheerio from 'cheerio';
+import { Agent, fetch as undiciFetch } from 'undici';
+
+// On Vercel (production) pann.nate.com has a valid cert — no bypass needed.
+// On corporate networks (SSL inspection), Node.js rejects the self-signed chain.
+const tlsAgent = new Agent({
+  connect: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
+});
 
 export interface Post {
   date: string;      // YYYYMMDD
@@ -72,11 +79,13 @@ export function filterByDateRange(posts: Post[], startDate: string, endDate: str
 }
 
 async function fetchPage(url: string, cookieString: string): Promise<string> {
-  // Keep only valid HTTP header value chars: printable ASCII + obs-text (0x20-0xFF), remove the rest
-  const safeCookie = cookieString.replace(/[^\x20-\xFF]/g, '').trim();
+  // Valid HTTP header value chars: tab (0x09), printable ASCII (0x20-0x7E), obs-text (0x80-0xFF).
+  // DEL (0x7F) is explicitly excluded by the HTTP spec and rejected by Node.js undici.
+  const safeCookie = cookieString.replace(/[^\x09\x20-\x7E\x80-\xFF]/g, '').trim();
   console.log(`[fetch] start ${url}, cookie length=${safeCookie.length}`);
 
-  const response = await fetch(url, {
+  const response = await undiciFetch(url, {
+    dispatcher: tlsAgent,
     headers: {
       Cookie: safeCookie,
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
