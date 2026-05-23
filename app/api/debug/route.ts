@@ -79,6 +79,31 @@ export async function GET(): Promise<NextResponse> {
       if (i < 2) firstRows.push($(el).html() ?? '');
     });
 
+    // Also fetch nate.com main to find username in header
+    let nateMainSnippet = '';
+    let nateMainNimMatches: string[] = [];
+    try {
+      const nateRes = await undiciFetch('https://www.nate.com/', {
+        dispatcher: tlsAgent,
+        headers: {
+          Cookie: safeCookie,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'ko-KR,ko;q=0.9',
+        },
+        redirect: 'follow',
+      });
+      const nateBuf = await nateRes.arrayBuffer();
+      const natePeek = new TextDecoder('ascii', { fatal: false }).decode(nateBuf.slice(0, 2000));
+      const nateCharset = natePeek.match(/charset=['"']?([^'"\s;>]+)/i)?.[1]?.toLowerCase() ?? '';
+      const nateHtml = new TextDecoder(nateCharset === 'euc-kr' ? 'euc-kr' : 'utf-8').decode(nateBuf);
+      const $n = cheerio.load(nateHtml);
+      nateMainSnippet = $n('body').text().slice(0, 1000);
+      nateMainNimMatches = nateMainSnippet.match(/([가-힣a-zA-Z0-9_]{2,15})\s*님/g) ?? [];
+    } catch (e2) {
+      nateMainSnippet = String(e2);
+    }
+
     return NextResponse.json({
       vercelRegion: process.env.VERCEL_REGION ?? 'unknown',
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
@@ -93,6 +118,8 @@ export async function GET(): Promise<NextResponse> {
       nimMatches: nimMatch ?? [],
       bodySnippet,
       firstRows,
+      nateMainNimMatches,
+      nateMainSnippet,
     });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
