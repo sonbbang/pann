@@ -19,6 +19,30 @@ export async function GET(): Promise<NextResponse> {
 
   const safeCookie = nateSession.replace(/[^\x09\x20-\x7E\x80-\xFF]/g, '').trim();
 
+  // Parse cookie keys and try to find username-like values
+  const cookieKeys: string[] = [];
+  const cookieUsernameHints: Record<string, string> = {};
+  for (const pair of safeCookie.split(';')) {
+    const eqIdx = pair.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = pair.slice(0, eqIdx).trim();
+    const val = pair.slice(eqIdx + 1).trim();
+    cookieKeys.push(key);
+    // Try URL-decode, base64-decode, look for Korean chars or "님"
+    try {
+      const decoded = decodeURIComponent(val);
+      if (/[가-힣]/.test(decoded) || decoded.includes('님')) {
+        cookieUsernameHints[key] = decoded.slice(0, 100);
+      }
+    } catch {}
+    try {
+      const b64 = Buffer.from(val, 'base64').toString('utf-8');
+      if (/[가-힣]/.test(b64) || b64.includes('님')) {
+        cookieUsernameHints[key + '__b64'] = b64.slice(0, 100);
+      }
+    } catch {}
+  }
+
   try {
     const response = await undiciFetch('https://pann.nate.com/my?mode=T', {
       dispatcher: tlsAgent,
@@ -59,6 +83,8 @@ export async function GET(): Promise<NextResponse> {
       vercelRegion: process.env.VERCEL_REGION ?? 'unknown',
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
       cookieLength: safeCookie.length,
+      cookieKeys,
+      cookieUsernameHints,
       charset,
       tableFound: html.includes('mylist'),
       rowCount: $('table.mylist tbody tr').length,
