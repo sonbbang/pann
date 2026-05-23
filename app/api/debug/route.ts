@@ -19,15 +19,20 @@ export async function GET(): Promise<NextResponse> {
 
   const safeCookie = nateSession.replace(/[^\x09\x20-\x7E\x80-\xFF]/g, '').trim();
 
-  // Parse cookie keys and try to find username-like values
+  // Parse cookie keys and inspect identity-related ones
   const cookieKeys: string[] = [];
   const cookieUsernameHints: Record<string, string> = {};
+  const identityCookies: Record<string, string> = {};
+  const IDENTITY_KEYS = ['SAVED_NATEID', 'LOGIN', 'UD3', 'UA3', 'UAKD', 'n_', 'HID'];
   for (const pair of safeCookie.split(';')) {
     const eqIdx = pair.indexOf('=');
     if (eqIdx === -1) continue;
     const key = pair.slice(0, eqIdx).trim();
     const val = pair.slice(eqIdx + 1).trim();
     cookieKeys.push(key);
+    if (IDENTITY_KEYS.includes(key)) {
+      try { identityCookies[key] = decodeURIComponent(val).slice(0, 200); } catch { identityCookies[key] = val.slice(0, 200); }
+    }
     // Try URL-decode, base64-decode, look for Korean chars or "님"
     try {
       const decoded = decodeURIComponent(val);
@@ -109,6 +114,7 @@ export async function GET(): Promise<NextResponse> {
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
       cookieLength: safeCookie.length,
       cookieKeys,
+      identityCookies,
       cookieUsernameHints,
       charset,
       tableFound: html.includes('mylist'),
