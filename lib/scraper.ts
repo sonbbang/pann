@@ -30,6 +30,25 @@ export interface ScrapeResult {
   topPosts: Post[];  // viewCount >= 5000, sorted desc
 }
 
+// Extract Nate member ID from UA3 cookie (base64-encoded zero-padded numeric ID).
+// UA3 format: "<base64>||" where base64 decodes to e.g. "0000470470"
+export function extractMemberIdFromCookie(cookieString: string): string {
+  for (const pair of cookieString.split(';')) {
+    const eqIdx = pair.indexOf('=');
+    if (eqIdx === -1) continue;
+    const key = pair.slice(0, eqIdx).trim();
+    if (key !== 'UA3') continue;
+    const val = pair.slice(eqIdx + 1).trim().split('||')[0];
+    try {
+      const decoded = Buffer.from(val, 'base64').toString('utf-8');
+      // Strip leading zeros, keep at least one digit
+      const stripped = decoded.replace(/^0+(\d)/, '$1');
+      if (/^\d+$/.test(stripped)) return stripped;
+    } catch {}
+  }
+  return '';
+}
+
 export function extractUsername(html: string): string {
   const $ = cheerio.load(html);
 
@@ -153,8 +172,10 @@ export async function scrapeMyTalkPosts(
       throw new AuthExpiredError();
     }
 
-    // Extract username from the first page only
-    if (visited === 0) username = extractUsername(html);
+    // Extract member ID from cookie (reliable); fall back to HTML parsing
+    if (visited === 0) {
+      username = extractMemberIdFromCookie(cookieString) || extractUsername(html);
+    }
 
     const { posts, hasNextPage, nextPageUrl } = parsePosts(html);
     visited++;
