@@ -75,8 +75,18 @@ export async function GET(): Promise<NextResponse> {
       const t = $(sel).first().text().trim();
       if (t) nickCandidates[sel] = t;
     }
-    const bodySnippet = $('body').text().slice(0, 500);
-    const nimMatch = bodySnippet.match(/([가-힣a-zA-Z0-9_]{2,15})\s*님/g);
+    const fullBodyText = $('body').text();
+    const bodySnippet = fullBodyText.slice(0, 500);
+    const nimMatch = fullBodyText.match(/([가-힣a-zA-Z0-9_]{2,15})\s*님/g);
+    // Show context around each "님" occurrence to find where username comes from
+    const nimContexts: string[] = [];
+    let searchIdx = 0;
+    while (nimContexts.length < 10) {
+      const idx = fullBodyText.indexOf('님', searchIdx);
+      if (idx === -1) break;
+      nimContexts.push(fullBodyText.slice(Math.max(0, idx - 20), idx + 10).replace(/\s+/g, ' ').trim());
+      searchIdx = idx + 1;
+    }
 
     // Grab the raw HTML of the first 2 rows to see real structure
     const firstRows: string[] = [];
@@ -122,6 +132,7 @@ export async function GET(): Promise<NextResponse> {
       username,
       nickCandidates,
       nimMatches: nimMatch ?? [],
+      nimContexts,
       bodySnippet,
       firstRows,
       nateMainNimMatches,
