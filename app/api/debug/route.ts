@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getNateSession } from '@/lib/session';
 import * as cheerio from 'cheerio';
 import { Agent, fetch as undiciFetch } from 'undici';
+import { extractUsername } from '@/lib/scraper';
 
 const tlsAgent = new Agent({
   connect: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
@@ -32,8 +33,21 @@ export async function GET(): Promise<NextResponse> {
     });
 
     const buffer = await response.arrayBuffer();
-    const html = new TextDecoder('euc-kr').decode(buffer);
+    const peek = new TextDecoder('ascii', { fatal: false }).decode(buffer.slice(0, 2000));
+    const metaCharset = peek.match(/charset=['"']?([^'"\s;>]+)/i)?.[1]?.toLowerCase() ?? '';
+    const charset = metaCharset === 'euc-kr' ? 'euc-kr' : 'utf-8';
+    const html = new TextDecoder(charset).decode(buffer);
     const $ = cheerio.load(html);
+
+    // Username extraction debug
+    const username = extractUsername(html);
+    const nickCandidates: Record<string, string> = {};
+    for (const sel of ['em.nick','span.nick','.nick','strong.nick','.my_info .name','.user_name','#myNick','.member_name','.myInfo em','.myInfo span']) {
+      const t = $(sel).first().text().trim();
+      if (t) nickCandidates[sel] = t;
+    }
+    const bodySnippet = $('body').text().slice(0, 500);
+    const nimMatch = bodySnippet.match(/([가-힣a-zA-Z0-9_]{2,15})\s*님/g);
 
     // Grab the raw HTML of the first 2 rows to see real structure
     const firstRows: string[] = [];
@@ -45,8 +59,13 @@ export async function GET(): Promise<NextResponse> {
       vercelRegion: process.env.VERCEL_REGION ?? 'unknown',
       isLoginPage: html.includes('f_login') || html.includes('LoginAuth.sk'),
       cookieLength: safeCookie.length,
+      charset,
       tableFound: html.includes('mylist'),
       rowCount: $('table.mylist tbody tr').length,
+      username,
+      nickCandidates,
+      nimMatches: nimMatch ?? [],
+      bodySnippet,
       firstRows,
     });
   } catch (e) {
