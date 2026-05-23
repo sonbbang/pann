@@ -21,12 +21,32 @@ export interface ParseResult {
 }
 
 export interface ScrapeResult {
+  username: string;
   count: number;
   totalViews: number;
   over5kCount: number;
   over50kCount: number;
   over100kCount: number;
   topPosts: Post[];  // viewCount >= 5000, sorted desc
+}
+
+export function extractUsername(html: string): string {
+  const $ = cheerio.load(html);
+
+  // Try common Korean portal nick selectors
+  for (const sel of [
+    'em.nick', 'span.nick', '.nick', 'strong.nick',
+    '.my_info .name', '.user_name', '#myNick', '.member_name',
+    '.myInfo em', '.myInfo span',
+  ]) {
+    const text = $(sel).first().text().trim();
+    if (text && text.length >= 2 && text.length <= 20) return text;
+  }
+
+  // Regex fallback: "닉네임 님" pattern anywhere in the page
+  const bodyText = $('body').text();
+  const match = bodyText.match(/([가-힣a-zA-Z0-9_]{2,15})\s*님(?:\s|$|의|이)/);
+  return match ? match[1] : '';
 }
 
 export function isLoginPage(html: string): boolean {
@@ -123,6 +143,7 @@ export async function scrapeMyTalkPosts(
   let url = 'https://pann.nate.com/my?mode=T';
   let allPosts: Post[] = [];
   let visited = 0;
+  let username = '';
   const MAX_PAGES = 50;
 
   while (visited < MAX_PAGES) {
@@ -131,6 +152,9 @@ export async function scrapeMyTalkPosts(
     if (isLoginPage(html)) {
       throw new AuthExpiredError();
     }
+
+    // Extract username from the first page only
+    if (visited === 0) username = extractUsername(html);
 
     const { posts, hasNextPage, nextPageUrl } = parsePosts(html);
     visited++;
@@ -152,6 +176,7 @@ export async function scrapeMyTalkPosts(
     .sort((a, b) => b.viewCount - a.viewCount);
 
   return {
+    username,
     count: allPosts.length,
     totalViews: allPosts.reduce((sum, p) => sum + p.viewCount, 0),
     over5kCount:   topPosts.filter(p => p.viewCount >= 5000  && p.viewCount < 50000).length,

@@ -18,12 +18,19 @@ interface TopPost {
 }
 
 interface StatsResult {
+  username: string;
   count: number;
   totalViews: number;
   over5kCount: number;
   over50kCount: number;
   over100kCount: number;
   topPosts: TopPost[];
+}
+
+interface RankingEntry {
+  username: string;
+  total_views: number;
+  post_count: number;
 }
 
 function formatNumber(n: number): string {
@@ -38,6 +45,7 @@ export default function HomePage() {
     to: DEFAULT_END,
   });
   const [stats, setStats] = useState<StatsResult | null>(null);
+  const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -94,6 +102,12 @@ export default function HomePage() {
       } else {
         const data = await res.json() as StatsResult;
         setStats(data);
+
+        // Fetch rankings for the same period
+        fetch(`/api/rankings?start=${start}&end=${end}`)
+          .then(r => r.ok ? r.json() : [])
+          .then((rows: RankingEntry[]) => setRankings(rows))
+          .catch(() => {});
       }
     } catch {
       setError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
@@ -170,6 +184,35 @@ export default function HomePage() {
                 </span>
                 <span className="text-muted-foreground shrink-0 tabular-nums">
                   {formatNumber(post.viewCount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {rankings.length > 0 && (
+        <div className="w-full max-w-2xl">
+          <p className="text-sm font-medium text-muted-foreground mb-2">
+            조회수 랭킹 — 같은 기간 조회한 유저
+          </p>
+          <div className="rounded-lg border bg-white divide-y text-sm">
+            {rankings.map((row, i) => (
+              <div
+                key={row.username}
+                className={`flex items-center gap-3 px-4 py-2 ${stats?.username === row.username ? 'bg-blue-50' : ''}`}
+              >
+                <span className="w-6 text-center font-bold text-muted-foreground shrink-0">
+                  {i + 1}
+                </span>
+                <span className="flex-1 font-medium truncate">
+                  {row.username}
+                  {stats?.username === row.username && (
+                    <span className="ml-1.5 text-xs text-blue-500">나</span>
+                  )}
+                </span>
+                <span className="tabular-nums text-muted-foreground shrink-0">
+                  {formatNumber(row.total_views)}
                 </span>
               </div>
             ))}
