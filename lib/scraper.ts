@@ -40,10 +40,8 @@ export function extractMemberIdFromCookie(cookieString: string): string {
     if (key !== 'UA3') continue;
     const val = pair.slice(eqIdx + 1).trim().split('||')[0];
     try {
-      const decoded = Buffer.from(val, 'base64').toString('utf-8');
-      // Strip leading zeros, keep at least one digit
-      const stripped = decoded.replace(/^0+(\d)/, '$1');
-      if (/^\d+$/.test(stripped)) return stripped;
+      const decoded = Buffer.from(val, 'base64').toString('utf-8').trim();
+      if (/^\d+$/.test(decoded)) return decoded;
     } catch {}
   }
   return '';
