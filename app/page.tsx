@@ -118,7 +118,7 @@ export default function HomePage() {
 
   if (!authChecked) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-50">
+      <main className="min-h-[960px] flex items-center justify-center bg-slate-50">
         <p className="text-muted-foreground">로딩 중...</p>
       </main>
     );
@@ -126,7 +126,7 @@ export default function HomePage() {
 
   if (!authenticated) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-50 p-4">
+      <main className="min-h-[960px] flex flex-col items-center justify-center gap-3 bg-slate-50 p-4">
         <h1 className="text-2xl font-bold">내 판 토크 통계</h1>
         <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside text-left">
           <li>아래 버튼으로 네이트 로그인 (새 탭)</li>
@@ -146,20 +146,17 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-6 bg-slate-50 p-4">
+    <main className="min-h-[960px] flex flex-col items-center justify-center gap-3 bg-slate-50 p-4">
       <h1 className="text-2xl font-bold">내 판 토크 통계</h1>
 
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex items-center gap-2">
         <p className="text-sm text-muted-foreground">기간</p>
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="flex gap-4 flex-wrap justify-center">
+      <div className="grid grid-cols-2 gap-3 w-full">
         <StatsCard label="작성 글 수" value={stats?.count ?? null} unit="건" loading={loading} />
         <StatsCard label="총 조회수" value={stats?.totalViews ?? null} unit="" loading={loading} />
-      </div>
-
-      <div className="flex gap-4 flex-wrap justify-center">
         <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
         <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
         <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
@@ -219,6 +216,15 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      <a
+        href="https://docs.google.com/spreadsheets/d/17uy1loDcwqa-pcARs9JluaEsHdCG0n_8IFsoLgAPB_k/edit?gid=0#gid=0"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-4 py-2.5 text-sm font-medium text-green-800 hover:bg-green-100 transition-colors"
+      >
+        📋 판메이커스 내부 직원 지원현황 입력하러 가기
+      </a>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
