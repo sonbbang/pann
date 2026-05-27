@@ -5,10 +5,13 @@ import { format } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { StatsCard } from '@/components/StatsCard';
 import { DateRangePicker } from '@/components/DateRangePicker';
+import { RankingPagination } from '@/components/RankingPagination';
 import { Button } from '@/components/ui/button';
 
 const DEFAULT_START = new Date(2026, 4, 8);   // May 8, 2026
 const DEFAULT_END = new Date(2026, 5, 7);     // Jun 7, 2026
+
+const RANKING_PAGE_SIZE = 5;
 
 interface TopPost {
   date: string;
@@ -33,6 +36,13 @@ interface RankingEntry {
   post_count: number;
 }
 
+interface RankingResponse {
+  data: RankingEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 function formatNumber(n: number): string {
   return n.toLocaleString('ko-KR');
 }
@@ -46,8 +56,12 @@ export default function HomePage() {
   });
   const [stats, setStats] = useState<StatsResult | null>(null);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
+  const [rankingPage, setRankingPage] = useState(1);
+  const [rankingTotal, setRankingTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const rankingTotalPages = Math.ceil(rankingTotal / RANKING_PAGE_SIZE);
 
   useEffect(() => {
     fetch('/api/auth/status')
@@ -71,6 +85,21 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated]);
 
+  const fetchRankings = useCallback(async (page: number) => {
+    if (!dateRange?.from || !dateRange?.to) return;
+    const start = format(dateRange.from, 'yyyyMMdd');
+    const end = format(dateRange.to, 'yyyyMMdd');
+
+    fetch(`/api/rankings?start=${start}&end=${end}&page=${page}`)
+      .then((r) => r.ok ? r.json() as Promise<RankingResponse> : Promise.resolve({ data: [], total: 0, page: 1, pageSize: RANKING_PAGE_SIZE }))
+      .then((res) => {
+        setRankings(res.data);
+        setRankingTotal(res.total);
+        setRankingPage(res.page);
+      })
+      .catch(() => {});
+  }, [dateRange]);
+
   const handleLogin = () => {
     window.open('https://xo.nate.com/Login.sk', '_blank', 'noopener,noreferrer');
   };
@@ -84,6 +113,10 @@ export default function HomePage() {
     setLoading(true);
     setError('');
     setStats(null);
+    // Reset ranking state on fresh fetch
+    setRankings([]);
+    setRankingPage(1);
+    setRankingTotal(0);
 
     try {
       const start = format(dateRange.from, 'yyyyMMdd');
@@ -102,19 +135,14 @@ export default function HomePage() {
       } else {
         const data = await res.json() as StatsResult;
         setStats(data);
-
-        // Fetch rankings for the same period
-        fetch(`/api/rankings?start=${start}&end=${end}`)
-          .then(r => r.ok ? r.json() : [])
-          .then((rows: RankingEntry[]) => setRankings(rows))
-          .catch(() => {});
+        fetchRankings(1);
       }
     } catch {
       setError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [dateRange, fetchRankings]);
 
   if (!authChecked) {
     return (
@@ -154,12 +182,16 @@ export default function HomePage() {
         <DateRangePicker value={dateRange} onChange={setDateRange} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 w-full">
-        <StatsCard label="작성 글 수" value={stats?.count ?? null} unit="건" loading={loading} />
-        <StatsCard label="총 조회수" value={stats?.totalViews ?? null} unit="" loading={loading} />
-        <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
-        <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
-        <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
+      <div className="flex flex-col gap-3 w-full">
+        <div className="grid grid-cols-2 gap-3">
+          <StatsCard label="작성 글 수" value={stats?.count ?? null} unit="건" loading={loading} />
+          <StatsCard label="총 조회수" value={stats?.totalViews ?? null} unit="" loading={loading} />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
+          <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
+          <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
+        </div>
       </div>
 
       {stats && stats.topPosts.length > 0 && (
@@ -188,32 +220,46 @@ export default function HomePage() {
         </div>
       )}
 
-      {rankings.length > 0 && (
+      {(rankings.length > 0 || rankingTotal > 0) && (
         <div className="w-full max-w-2xl">
           <p className="text-sm font-medium text-muted-foreground mb-2">
             조회수 랭킹 — 같은 기간 조회한 유저
+            {rankingTotal > 0 && (
+              <span className="ml-1.5 text-xs font-normal">
+                ({rankingTotal}명)
+              </span>
+            )}
           </p>
           <div className="rounded-lg border bg-white divide-y text-sm">
-            {rankings.map((row, i) => (
-              <div
-                key={row.username}
-                className={`flex items-center gap-3 px-4 py-2 ${stats?.username === row.username ? 'bg-blue-50' : ''}`}
-              >
-                <span className="w-6 text-center font-bold text-muted-foreground shrink-0">
-                  {i + 1}
-                </span>
-                <span className="flex-1 font-medium truncate">
-                  {row.username}
-                  {stats?.username === row.username && (
-                    <span className="ml-1.5 text-xs text-blue-500">나</span>
-                  )}
-                </span>
-                <span className="tabular-nums text-muted-foreground shrink-0">
-                  {formatNumber(row.total_views)}
-                </span>
-              </div>
-            ))}
+            {rankings.map((row, i) => {
+              const rank = (rankingPage - 1) * RANKING_PAGE_SIZE + i + 1;
+              return (
+                <div
+                  key={row.username}
+                  className={`flex items-center gap-3 px-4 py-2 ${stats?.username === row.username ? 'bg-blue-50' : ''}`}
+                >
+                  <span className="w-6 text-center font-bold text-muted-foreground shrink-0 tabular-nums">
+                    {rank}
+                  </span>
+                  <span className="flex-1 font-medium truncate">
+                    {row.username}
+                    {stats?.username === row.username && (
+                      <span className="ml-1.5 text-xs text-blue-500">나</span>
+                    )}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground shrink-0">
+                    {formatNumber(row.total_views)}
+                  </span>
+                </div>
+              );
+            })}
           </div>
+
+          <RankingPagination
+            page={rankingPage}
+            totalPages={rankingTotalPages}
+            onPageChange={fetchRankings}
+          />
         </div>
       )}
 
