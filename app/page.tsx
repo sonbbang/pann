@@ -188,9 +188,9 @@ export default function HomePage() {
           <StatsCard label="총 조회수" value={stats?.totalViews ?? null} unit="" loading={loading} />
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} />
-          <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} />
-          <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} />
+          <StatsCard label="5천~5만 조회" value={stats?.over5kCount ?? null} unit="건" loading={loading} compact />
+          <StatsCard label="5만~10만 조회" value={stats?.over50kCount ?? null} unit="건" loading={loading} compact />
+          <StatsCard label="10만+ 조회" value={stats?.over100kCount ?? null} unit="건" loading={loading} compact />
         </div>
       </div>
 
