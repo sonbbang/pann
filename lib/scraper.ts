@@ -209,3 +209,75 @@ export function validateCookieString(cookieString: string): boolean {
   // Basic format check: must contain at least one key=value pair
   return cookieString.includes('=');
 }
+
+// ─── Public (unauthenticated) scraping ───────────────────────────────────────
+
+async function fetchPublicPage(url: string): Promise<string> {
+  const response = await undiciFetch(url, {
+    dispatcher: tlsAgent,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+      Accept: 'text/html,application/xhtml+xml',
+      'Accept-Language': 'ko-KR,ko;q=0.9',
+      Referer: 'https://m.pann.nate.com/',
+    },
+    redirect: 'follow',
+  });
+
+  const buffer = await response.arrayBuffer();
+  const peek = new TextDecoder('ascii', { fatal: false }).decode(buffer.slice(0, 2000));
+  const metaCharset = peek.match(/charset=['"']?([^'"\s;>]+)/i)?.[1]?.toLowerCase() ?? '';
+  const charset = metaCharset === 'euc-kr' ? 'euc-kr' : 'utf-8';
+  return new TextDecoder(charset).decode(buffer);
+}
+
+export interface PopularPost {
+  title: string;
+  url: string;
+  viewCount: number;
+  commentCount: number;
+  body?: string;
+}
+
+/**
+ * Scrapes the popular posts list from a mobile pann category page.
+ * @param categoryId e.g. "c20025"
+ * @param order "R" = 명예의전당(실시간), "B" = 베스트글
+ */
+export async function scrapePopularPosts(
+  categoryId: string,
+  order: 'R' | 'B' = 'R',
+  limit = 20
+): Promise<PopularPost[]> {
+  const url = `https://m.pann.nate.com/talk/${categoryId}?order=${order}`;
+  const html = await fetchPublicPage(url);
+  const $ = cheerio.load(html);
+  const posts: PopularPost[] = [];
+
+  $('ul.list li').each((_, el) => {
+    const href = $(el).find('a.cnbox').attr('href') ?? '';
+    const idMatch = href.match(/\/talk\/(\d+)/);
+    if (!idMatch) return;
+
+    const postUrl = `https://m.pann.nate.com/talk/${idMatch[1]}`;
+    const title = $(el).find('span.tit').text().trim();
+    const viewText = $(el).find('span.sub span.num').first().text().replace(/,/g, '').trim();
+    const viewCount = parseInt(viewText, 10) || 0;
+    const commentText = $(el).find('span.count').text().replace(/[()]/g, '').trim();
+    const commentCount = parseInt(commentText, 10) || 0;
+
+    if (title) posts.push({ title, url: postUrl, viewCount, commentCount });
+  });
+
+  return posts.slice(0, limit);
+}
+
+/**
+ * Fetches the body text of a single pann post (mobile version).
+ * Truncates to 800 chars to keep token usage reasonable.
+ */
+export async function scrapePostBody(postUrl: string): Promise<string> {
+  const html = await fetchPublicPage(postUrl);
+  const $ = cheerio.load(html);
+  return $('#pann-content').text().replace(/\s+/g, ' ').trim().slice(0, 800);
+}

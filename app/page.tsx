@@ -43,6 +43,15 @@ interface RankingResponse {
   pageSize: number;
 }
 
+interface GeneratedPost {
+  title: string;
+  content: string;
+}
+
+interface AiResult {
+  posts: GeneratedPost[];
+}
+
 function formatNumber(n: number): string {
   return n.toLocaleString('ko-KR');
 }
@@ -60,6 +69,11 @@ export default function HomePage() {
   const [rankingTotal, setRankingTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [aiResult, setAiResult] = useState<AiResult | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiGender, setAiGender] = useState<'여성' | '남성'>('여성');
+  const [aiCategory, setAiCategory] = useState('c20025');
 
   const rankingTotalPages = Math.ceil(rankingTotal / RANKING_PAGE_SIZE);
 
@@ -143,6 +157,30 @@ export default function HomePage() {
       setLoading(false);
     }
   }, [dateRange, fetchRankings]);
+
+  const handleAiGenerate = useCallback(async () => {
+    setAiLoading(true);
+    setAiError('');
+    setAiResult(null);
+    try {
+      const res = await fetch('/api/ai-posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: aiCategory, order: 'R', gender: aiGender }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as Record<string, string>;
+        setAiError(data.error ?? 'AI 생성 중 오류가 발생했습니다.');
+      } else {
+        const data = await res.json() as AiResult;
+        setAiResult(data);
+      }
+    } catch {
+      setAiError('네트워크 오류가 발생했습니다.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiGender, aiCategory]);
 
   if (!authChecked) {
     return (
@@ -262,6 +300,79 @@ export default function HomePage() {
           />
         </div>
       )}
+
+      <div className="w-full max-w-2xl">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-medium text-muted-foreground">✨ AI 글 아이디어</p>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                { id: 'c20025', label: '결혼/시집/친정' },
+                { id: 'c20001', label: '사는 얘기' },
+                { id: 'c20008', label: '사랑, 고백해도 될까?' },
+                { id: 'c20038', label: '10대 이야기' },
+              ] as const).map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => { setAiCategory(id); setAiResult(null); if (id === 'c20025') setAiGender('여성'); }}
+                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${aiCategory === id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
+              {(['여성', '남성'] as const).map((g) => (
+                <button
+                  key={g}
+                  onClick={() => { setAiGender(g); setAiResult(null); }}
+                  disabled={aiCategory === 'c20025' && g === '남성'}
+                  className={`px-2.5 py-1 transition-colors ${aiGender === g ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'} ${aiCategory === 'c20025' && g === '남성' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleAiGenerate}
+            disabled={aiLoading}
+          >
+            {aiLoading ? '분석 중...' : aiResult ? '다시 생성' : '오늘 인기글로 아이디어 생성'}
+          </Button>
+        </div>
+
+        {aiLoading && (
+          <p className="text-sm text-muted-foreground text-center py-6">
+            인기글 본문 분석 중... (10~20초 소요)
+          </p>
+        )}
+
+        {aiError && <p className="text-sm text-destructive">{aiError}</p>}
+
+        {aiResult && (
+          <div className="space-y-4">
+            {aiResult.posts?.map((post, i) => (
+              <div key={i} className="rounded-lg border bg-white overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b gap-2">
+                  <p className="font-semibold text-sm flex-1">{post.title}</p>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground shrink-0 border rounded px-2 py-0.5"
+                    onClick={() => { const body = post.content.replace(/\n/g, '\n\n'); navigator.clipboard.writeText(`${post.title}\n\n${body}`); }}
+                  >
+                    복사
+                  </button>
+                </div>
+                <p className="px-4 py-3 text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                  {post.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <a
         href="https://docs.google.com/spreadsheets/d/17uy1loDcwqa-pcARs9JluaEsHdCG0n_8IFsoLgAPB_k/edit?gid=0#gid=0"
