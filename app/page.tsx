@@ -400,17 +400,6 @@ export default function HomePage() {
                         </button>
                       ))}
                     </div>
-                    <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
-                      {(['여성', '남성'] as const).map((g) => (
-                        <button
-                          key={g}
-                          onClick={() => { setAiGender(g); setAiResult(null); }}
-                          className={`px-2.5 py-1 transition-colors ${aiGender === g ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
-                        >
-                          {g}
-                        </button>
-                      ))}
-                    </div>
                   </div>
                 </>
               )}
