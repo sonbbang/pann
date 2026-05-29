@@ -75,6 +75,7 @@ export default function HomePage() {
   const [aiGender, setAiGender] = useState<'여성' | '남성'>('여성');
   const [aiCategory, setAiCategory] = useState('c20025');
   const [activeTab, setActiveTab] = useState<'popular' | 'news'>('popular');
+  const [aiModel, setAiModel] = useState<'gpt-4o-mini' | 'gpt-4.1-mini' | 'gpt-5.4-mini'>('gpt-5.4-mini');
   const [newsUrl, setNewsUrl] = useState('');
   const [postCount, setPostCount] = useState<1 | 2 | 3>(1);
 
@@ -169,7 +170,7 @@ export default function HomePage() {
       const res = await fetch('/api/ai-posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: aiCategory, order: 'R', gender: aiGender }),
+        body: JSON.stringify({ category: aiCategory, order: 'R', gender: aiGender, model: aiModel }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as Record<string, string>;
@@ -194,7 +195,7 @@ export default function HomePage() {
       const res = await fetch('/api/news-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: newsUrl, gender: aiGender, count: postCount }),
+        body: JSON.stringify({ url: newsUrl, gender: aiGender, count: postCount, model: aiModel }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({})) as Record<string, string>;
@@ -341,6 +342,24 @@ export default function HomePage() {
                   className={`px-3 py-1 transition-colors ${(i === 0 ? activeTab === 'popular' : activeTab === 'news') ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
                 >
                   {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">모델</span>
+            <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
+              {(['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setAiModel(m)}
+                  className={`px-2.5 py-1 transition-colors ${aiModel === m ? 
+'bg-slate-800 text-white'
+ : 
+'bg-white text-muted-foreground hover:bg-slate-50'
+}`}
+                >
+                  {m === 'gpt-4o-mini' ? '4o-mini' : m === 'gpt-4.1-mini' ? '4.1-mini' : '4.5-mini'}
                 </button>
               ))}
             </div>

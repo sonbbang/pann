@@ -44,10 +44,12 @@ function buildNewsSystemPrompt(count: number): string {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({})) as { url?: string; gender?: string; count?: number };
+  const body = await request.json().catch(() => ({})) as { url?: string; gender?: string; count?: number; model?: string };
   const url = body.url?.trim();
 
   const count = Math.min(Math.max(Number(body.count) || 1, 1), 3);
+  const ALLOWED_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini'];
+  const model = ALLOWED_MODELS.includes(body.model ?? '') ? body.model! : 'gpt-4.5-mini';
 
   if (!url || !/^https?:\/\//.test(url)) {
     return NextResponse.json({ error: 'URL을 입력해주세요.' }, { status: 400 });
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model,
       messages: [
         { role: 'system', content: buildNewsSystemPrompt(count) },
         { role: 'user', content: userPrompt },

@@ -95,11 +95,13 @@ function buildUserPrompt(posts: PopularPost[], category: string): string {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({})) as { category?: string; order?: string; gender?: string };
+  const body = await request.json().catch(() => ({})) as { category?: string; order?: string; gender?: string; model?: string };
   const category = body.category ?? 'c20025';
   const order = (body.order ?? 'R') as 'R' | 'B';
   // c20025(결혼/시집/친정)은 여성 전용 카테고리
   const gender = (category === 'c20025' ? '여성' : (body.gender === '남성' ? '남성' : '여성')) as '여성' | '남성';
+  const ALLOWED_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini'];
+  const model = ALLOWED_MODELS.includes(body.model ?? '') ? body.model! : 'gpt-4.5-mini';
 
   if (!/^c\d+$/.test(category)) {
     return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
@@ -130,7 +132,7 @@ export async function POST(request: NextRequest) {
     // Generate directly with the selected gender (no post-processing conversion)
     const userPrompt = buildUserPrompt(postsWithBody, category);
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model,
       messages: [
         { role: 'system', content: buildSystemPrompt(gender, category) },
         { role: 'user', content: userPrompt },
