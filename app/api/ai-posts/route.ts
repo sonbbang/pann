@@ -9,8 +9,6 @@ function shuffle<T>(arr: T[]): T[] {
 export const preferredRegion = 'icn1';
 export const maxDuration = 60;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 function buildSystemPrompt(gender: '여성' | '남성', category: string): string {
   const isMarriageCategory = category === 'c20025';
   const genderGuide = gender === '남성'
@@ -92,6 +90,8 @@ export async function POST(request: NextRequest) {
   if (!/^c\d+$/.test(category)) {
     return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
   }
+
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   try {
     // Step 1: get popular post list
