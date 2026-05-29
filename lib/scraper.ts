@@ -281,3 +281,54 @@ export async function scrapePostBody(postUrl: string): Promise<string> {
   const $ = cheerio.load(html);
   return $('#pann-content').text().replace(/\s+/g, ' ').trim().slice(0, 800);
 }
+
+// ─── News article scraping (m.news.nate.com) ──────────────────────────────────
+
+export interface NewsArticle {
+  title: string;
+  body: string;
+  comments: string[];
+}
+
+export async function scrapeNewsArticle(url: string): Promise<NewsArticle> {
+  const html = await fetchPublicPage(url);
+  const $ = cheerio.load(html);
+
+  // Title — try multiple selectors
+  const title = (
+    $('h3.tit_view').first().text() ||
+    $('h2.tit_view').first().text() ||
+    $('.tit_view').first().text() ||
+    $('meta[property="og:title"]').attr('content') ||
+    $('title').text().split('|')[0]
+  ).replace(/\s+/g, ' ').trim();
+
+  // Body
+  const bodyEl = $(
+    '#articeBody, #articleCont, .articleCont, .text_view, .view_cont, .article_body'
+  ).first();
+  const body = (bodyEl.length ? bodyEl : $('article')).text()
+    .replace(/\s+/g, ' ').trim().slice(0, 1000);
+
+  // Comments — try multiple selectors in order
+  const comments: string[] = [];
+  const selectors = [
+    '.list_comment .comment_text',
+    '.list_comment .txt',
+    '.comment_area .text',
+    '.cmt_list .txt',
+    '#comment .text',
+    '.comment_wrap li .text',
+    '.comment_box .txt',
+    '.comment_list .cmt_txt',
+  ];
+  for (const sel of selectors) {
+    $(sel).each((_, el) => {
+      const t = $(el).text().replace(/\s+/g, ' ').trim();
+      if (t.length > 5 && !comments.includes(t)) comments.push(t);
+    });
+    if (comments.length >= 3) break;
+  }
+
+  return { title, body, comments: comments.slice(0, 10) };
+}

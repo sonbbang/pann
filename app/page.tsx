@@ -74,6 +74,9 @@ export default function HomePage() {
   const [aiError, setAiError] = useState('');
   const [aiGender, setAiGender] = useState<'여성' | '남성'>('여성');
   const [aiCategory, setAiCategory] = useState('c20025');
+  const [activeTab, setActiveTab] = useState<'popular' | 'news'>('popular');
+  const [newsUrl, setNewsUrl] = useState('');
+  const [postCount, setPostCount] = useState<1 | 2 | 3>(1);
 
   const rankingTotalPages = Math.ceil(rankingTotal / RANKING_PAGE_SIZE);
 
@@ -181,6 +184,31 @@ export default function HomePage() {
       setAiLoading(false);
     }
   }, [aiGender, aiCategory]);
+
+  const handleNewsGenerate = useCallback(async () => {
+    if (!newsUrl.trim()) return;
+    setAiLoading(true);
+    setAiError('');
+    setAiResult(null);
+    try {
+      const res = await fetch('/api/news-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: newsUrl, gender: aiGender, count: postCount }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as Record<string, string>;
+        setAiError(data.error ?? 'AI 생성 중 오류가 발생했습니다.');
+      } else {
+        const data = await res.json() as AiResult;
+        setAiResult(data);
+      }
+    } catch {
+      setAiError('네트워크 오류가 발생했습니다.');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [newsUrl, aiGender, postCount]);
 
   if (!authChecked) {
     return (
@@ -302,51 +330,105 @@ export default function HomePage() {
       )}
 
       <div className="w-full max-w-2xl">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2 mb-2">
+          <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted-foreground">✨ AI 글 아이디어</p>
-            <div className="flex flex-wrap gap-1.5">
-              {([
-                { id: 'c20025', label: '결혼/시집/친정' },
-                { id: 'c20001', label: '사는 얘기' },
-                { id: 'c20008', label: '사랑, 고백해도 될까?' },
-                { id: 'c20038', label: '10대 이야기' },
-              ] as const).map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => { setAiCategory(id); setAiResult(null); if (id === 'c20025') setAiGender('여성'); }}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${aiCategory === id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
             <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
-              {(['여성', '남성'] as const).map((g) => (
+              {(['인기글 기반', '뉴스 기반'] as const).map((tab, i) => (
                 <button
-                  key={g}
-                  onClick={() => { setAiGender(g); setAiResult(null); }}
-                  disabled={aiCategory === 'c20025' && g === '남성'}
-                  className={`px-2.5 py-1 transition-colors ${aiGender === g ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'} ${aiCategory === 'c20025' && g === '남성' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                  key={tab}
+                  onClick={() => { setActiveTab(i === 0 ? 'popular' : 'news'); setAiResult(null); }}
+                  className={`px-3 py-1 transition-colors ${(i === 0 ? activeTab === 'popular' : activeTab === 'news') ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
                 >
-                  {g}
+                  {tab}
                 </button>
               ))}
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleAiGenerate}
-            disabled={aiLoading}
-          >
-            {aiLoading ? '분석 중...' : aiResult ? '다시 생성' : '오늘 인기글로 아이디어 생성'}
-          </Button>
+          <div className="flex items-end justify-between gap-2">
+            <div className="flex flex-col gap-1.5">
+              {activeTab === 'popular' && (
+                <>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { id: 'c20025', label: '결혼/시집/친정' },
+                      { id: 'c20001', label: '사는 얘기' },
+                      { id: 'c20008', label: '사랑, 고백해도 될까?' },
+                      { id: 'c20038', label: '10대 이야기' },
+                    ] as const).map(({ id, label }) => (
+                      <button
+                        key={id}
+                        onClick={() => { setAiCategory(id); setAiResult(null); if (id === 'c20025') setAiGender('여성'); }}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${aiCategory === id ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
+                    {(['여성', '남성'] as const).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => { setAiGender(g); setAiResult(null); }}
+                        disabled={aiCategory === 'c20025' && g === '남성'}
+                        className={`px-2.5 py-1 transition-colors ${aiGender === g ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'} ${aiCategory === 'c20025' && g === '남성' ? 'opacity-30 cursor-not-allowed' : ''}`}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {activeTab === 'news' && (
+                <>
+                  <input
+                    type="url"
+                    placeholder="https://m.news.nate.com/view/..."
+                    value={newsUrl}
+                    onChange={(e) => setNewsUrl(e.target.value)}
+                    className="text-xs border rounded px-2.5 py-1.5 w-72 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                  <div className="flex gap-2">
+                    <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
+                      {([1, 2, 3] as const).map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => setPostCount(n)}
+                          className={`px-2.5 py-1 transition-colors ${postCount === n ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
+                        >
+                          {n}편
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
+                      {(['여성', '남성'] as const).map((g) => (
+                        <button
+                          key={g}
+                          onClick={() => { setAiGender(g); setAiResult(null); }}
+                          className={`px-2.5 py-1 transition-colors ${aiGender === g ? 'bg-slate-800 text-white' : 'bg-white text-muted-foreground hover:bg-slate-50'}`}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={activeTab === 'popular' ? handleAiGenerate : handleNewsGenerate}
+              disabled={aiLoading || (activeTab === 'news' && !newsUrl.trim())}
+            >
+              {aiLoading ? '분석 중...' : aiResult ? '다시 생성' : (activeTab === 'news' ? '뉴스로 글 생성' : '오늘 인기글로 아이디어 생성')}
+            </Button>
+          </div>
         </div>
 
         {aiLoading && (
           <p className="text-sm text-muted-foreground text-center py-6">
-            인기글 본문 분석 중... (10~20초 소요)
+            분석 중... (10~20초 소요)
           </p>
         )}
 
