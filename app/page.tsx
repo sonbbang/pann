@@ -75,7 +75,7 @@ export default function HomePage() {
   const [aiGender, setAiGender] = useState<'여성' | '남성'>('여성');
   const [aiCategory, setAiCategory] = useState('c20025');
   const [activeTab, setActiveTab] = useState<'popular' | 'news'>('popular');
-  const [aiModel, setAiModel] = useState<'gpt-4o-mini' | 'gpt-4.1-mini' | 'gpt-5.4-mini'>('gpt-5.4-mini');
+  const [aiModel, setAiModel] = useState('gpt-5.4-mini');
   const [newsUrl, setNewsUrl] = useState('');
   const [postCount, setPostCount] = useState<1 | 2 | 3>(1);
 
@@ -349,7 +349,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">모델</span>
             <div className="flex rounded-md border overflow-hidden text-xs font-medium w-fit">
-              {(['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini'] as const).map((m) => (
+              {(['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini', 'gpt-5.4-mini'] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setAiModel(m)}
@@ -359,7 +359,7 @@ export default function HomePage() {
 'bg-white text-muted-foreground hover:bg-slate-50'
 }`}
                 >
-                  {m === 'gpt-4o-mini' ? '4o-mini' : m === 'gpt-4.1-mini' ? '4.1-mini' : '4.5-mini'}
+                  {m === 'gpt-4o-mini' ? '4o-mini' : m === 'gpt-4.1-mini' ? '4.1-mini' : m === 'gpt-4.5-mini' ? '4.5-mini' : '5.4-mini'}
                 </button>
               ))}
             </div>
