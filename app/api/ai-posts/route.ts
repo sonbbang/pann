@@ -100,8 +100,7 @@ export async function POST(request: NextRequest) {
   const order = (body.order ?? 'R') as 'R' | 'B';
   // c20025(결혼/시집/친정)은 여성 전용 카테고리
   const gender = (category === 'c20025' ? '여성' : (body.gender === '남성' ? '남성' : '여성')) as '여성' | '남성';
-  const ALLOWED_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini', 'gpt-5.4-mini'];
-  const model = ALLOWED_MODELS.includes(body.model ?? '') ? body.model! : 'gpt-5.4-mini';
+  const model = body.model ?? 'gpt-4o-mini';
 
   if (!/^c\d+$/.test(category)) {
     return NextResponse.json({ error: 'Invalid category' }, { status: 400 });

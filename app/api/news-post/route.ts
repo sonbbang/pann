@@ -48,8 +48,7 @@ export async function POST(request: NextRequest) {
   const url = body.url?.trim();
 
   const count = Math.min(Math.max(Number(body.count) || 1, 1), 3);
-  const ALLOWED_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-4.5-mini', 'gpt-5.4-mini'];
-  const model = ALLOWED_MODELS.includes(body.model ?? '') ? body.model! : 'gpt-5.4-mini';
+  const model = body.model ?? 'gpt-4o-mini';
 
   if (!url || !/^https?:\/\//.test(url)) {
     return NextResponse.json({ error: 'URL을 입력해주세요.' }, { status: 400 });
